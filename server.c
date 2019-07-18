@@ -1,7 +1,5 @@
-
-
 #include<stdio.h>
-#include <sys/types.h>          /* See NOTES */
+#include <sys/types.h>          
 #include <sys/socket.h>
 #include <stdlib.h>
 #include <netinet/in.h>
@@ -35,30 +33,25 @@ void get_system_time(char* timedata)
 	return ;
 }
 
-/******************************************************
-*函数名：history_init
-*参   数：线程处理结构体，用户处理内容buf
-*******************************************************/
 void history_init(MSG *msg,char *buf)
 {
+	printf("--------%s---------%d-------",__func__,__LINE__);
 	//获取当前时间--封装sql命令---将buf用户的操作记录插入到历史记录的表当中
 	int nrow,ncolumn;
 	char *errmsg, **resultp;
 	char sqlhistory[DATALEN] = {0};
 	char timedata[DATALEN] = {0};
-
 	get_system_time(timedata);
-
 //	sprintf(sqlhistory,"insert into historyinfo values ('%s','%s','%s');",timedata,msg->username,buf);
-	if(sqlite3_exec(db,sqlhistory,NULL,NULL,&errmsg)!= SQLITE_OK){
+	if(sqlite3_exec(db,sqlhistory,NULL,NULL,&errmsg)!= SQLITE_OK)
+	{
 		printf("%s.\n",errmsg);
 		printf("insert historyinfo failed.\n");
-	}else{
+	}else
+	{
 		printf("insert historyinfo success.\n");
 	}
 }
-
-
 int process_user_or_admin_login_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
@@ -74,14 +67,18 @@ int process_user_or_admin_login_request(int acceptfd,MSG *msg)
 	
 	printf("usrtype: %#x-----usrname: %s---passwd: %s.\n",msg->info.usertype,msg->info.name,msg->info.passwd);
 	sprintf(sql,"select * from usrinfo where usertype=%d and name='%s' and passwd='%s';",msg->info.usertype,msg->info.name,msg->info.passwd);
-	if(sqlite3_get_table(db,sql,&result,&nrow,&ncolumn,&errmsg) != SQLITE_OK){
+	if(sqlite3_get_table(db,sql,&result,&nrow,&ncolumn,&errmsg) != SQLITE_OK)	
+	{
 		printf("---****----%s.\n",errmsg);		
-	}else{
+	}else
+	{
 		//printf("----nrow-----%d,ncolumn-----%d.\n",nrow,ncolumn);		
-		if(nrow == 0){
+		if(nrow == 0)
+		{
 			strcpy(msg->recvmsg,"name or passwd failed.\n");
 			send(acceptfd,msg,sizeof(MSG),0);
-		}else{
+		}else
+		{
 			strcpy(msg->recvmsg,"OK");
 			send(acceptfd,msg,sizeof(MSG),0);
 		}
@@ -149,18 +146,22 @@ int process_user_query_request(int acceptfd,MSG *msg)
 	char *errmsg;
 
 	sprintf(sql,"select * from usrinfo where name='%s';",msg->username);
-	if(sqlite3_get_table(db, sql, &resultp,&nrow,&ncolumn,&errmsg) != SQLITE_OK){
+	if(sqlite3_get_table(db, sql, &resultp,&nrow,&ncolumn,&errmsg) != SQLITE_OK)
+	{
 		printf("%s.\n",errmsg);
-	}else{
+	}else
+	{
 		printf("searching.....\n");	
-		for(i = 0; i < ncolumn; i ++){
+		for(i = 0; i < ncolumn; i ++)
+		{
 			printf("%-8s ",resultp[i]);
 		}
 		puts("");
 		puts("======================================================================================");
 				
 		int index = ncolumn;
-		for(i = 0; i < nrow; i ++){
+		for(i = 0; i < nrow; i ++)
+		{
 			printf("%s    %s     %s     %s     %s     %s     %s     %s     %s     %s     %s.\n",\
 			    resultp[index+ncolumn-11],resultp[index+ncolumn-10],\
 				resultp[index+ncolumn-9],resultp[index+ncolumn-8],resultp[index+ncolumn-7],\
@@ -198,15 +199,7 @@ int process_admin_modify_request(int acceptfd,MSG *msg)
 
 	switch (msg->recvmsg[0])
 	{
-		/*case 'N':
-			sprintf(sql,"update usrinfo set name='%s' where staffno=%d;",msg->info.name, msg->info.no);
-			sprintf(historybuf,"%s修改工号为 %d的名字为 %s",msg->username,msg->info.no,msg->info.name);
-			break;
-		case 'A':
-			sprintf(sql,"update usrinfo set age=%d where staffno=%d;",msg->info.age, msg->info.no);
-			sprintf(historybuf,"%s修改工号为%d的年龄为%d",msg->username,msg->info.no,msg->info.age);
-			break;
-			*/
+	
 		case 'P':
 			sprintf(sql,"update usrinfo set phone='%s' where staffno=%d;",msg->info.phone,msg->info.no);
 			sprintf(historybuf,"%s修改工号为%d的电话为%s",msg->username,msg->info.no,msg->info.phone);
@@ -215,22 +208,7 @@ int process_admin_modify_request(int acceptfd,MSG *msg)
 			sprintf(sql,"update usrinfo set addr='%s' where staffno=%d;",msg->info.addr, msg->info.no);
 			sprintf(historybuf,"%s修改工号为%d的家庭住址为%s",msg->username,msg->info.no,msg->info.addr);
 			break;
-		/*case 'W':
-			sprintf(sql,"update usrinfo set work='%s' where staffno=%d;",msg->info.work, msg->info.no);
-			sprintf(historybuf,"%s修改工号为%d的职位为%s",msg->username,msg->info.no,msg->info.work);
-			break;
-		case 'T':
-			sprintf(sql,"update usrinfo set date='%s' where staffno=%d;",msg->info.date, msg->info.no);
-			sprintf(historybuf,"%s修改工号为%d的入职日期为%s",msg->username,msg->info.no,msg->info.date);
-			break;
-		case 'L':
-			sprintf(sql,"update usrinfo set level=%d where staffno=%d;",msg->info.level, msg->info.no);
-			sprintf(historybuf,"%s修改工号为%d的评级为%d",msg->username,msg->info.no,msg->info.level);
-			break;
-		case 'S':
-			sprintf(sql,"update usrinfo set salary=%.2f where staffno=%d;",msg->info.salary, msg->info.no);
-			sprintf(historybuf,"%s修改工号为%d的工资为%.2f",msg->username,msg->info.no,msg->info.salary);
-			break;*/
+		
 		case 'M':
 			sprintf(sql,"update usrinfo set passwd='%s' where staffno=%d;",msg->info.passwd, msg->info.no);
 			sprintf(historybuf,"%s修改工号为%d的密码为%s",msg->username,msg->info.no,msg->info.passwd);
@@ -238,10 +216,12 @@ int process_admin_modify_request(int acceptfd,MSG *msg)
 	}
 	
 	//调用sqlite3_exec执行sql命令
-	if(sqlite3_exec(db,sql,NULL,NULL,&errmsg) != SQLITE_OK){
+	if(sqlite3_exec(db,sql,NULL,NULL,&errmsg) != SQLITE_OK)
+	{
 		printf("%s.\n",errmsg);
 		sprintf(msg->recvmsg,"数据库修改失败！%s", errmsg);
-	}else{
+	}else
+	{
 		printf("the database is updated successfully.\n");
 		sprintf(msg->recvmsg, "数据库修改成功!");
 		history_init(msg,historybuf);
@@ -262,23 +242,25 @@ int process_admin_adduser_request(int acceptfd,MSG *msg)
 	char sql[DATALEN] = {0};
 	char buf[DATALEN] = {0};
 	char *errmsg;
-
+        /*
 	printf("%d\t %d\t %s\t %s\t %d\n %s\t %s\t %s\t %s\t %d\t %f.\n",msg->info.no,msg->info.usertype,\
 	    msg->info.name,msg->info.passwd,\
 		msg->info.age,msg->info.phone,msg->info.addr,msg->info.work,\
-		msg->info.date,msg->info.level,msg->info.salary);
+		msg->info.date,msg->info.level,msg->info.salary);*/
 	
 	sprintf(sql,"insert into usrinfo values(%d,%d,'%s','%s',%d,'%s','%s','%s','%s',%d,%f);",\
 		msg->info.no,msg->info.usertype,msg->info.name,msg->info.passwd,\
 		msg->info.age,msg->info.phone,msg->info.addr,msg->info.work,\
 		msg->info.date,msg->info.level,msg->info.salary);
 	
-	if(sqlite3_exec(db,sql,NULL,NULL,&errmsg)!= SQLITE_OK){
+	if(sqlite3_exec(db,sql,NULL,NULL,&errmsg)!= SQLITE_OK)
+	{
 		printf("----------%s.\n",errmsg);
 		strcpy(msg->recvmsg,"failed");
 		send(acceptfd,msg,sizeof(MSG),0);
 		return -1;
-	}else{
+	}else
+	{
 		strcpy(msg->recvmsg,"OK");
 		send(acceptfd,msg,sizeof(msg),0);
 		printf("%s register success.\n",msg->info.name);
@@ -301,23 +283,22 @@ int process_admin_deluser_request(int acceptfd,MSG *msg)
 	printf("msg->info.no :%d\t msg->info.name: %s.\n",msg->info.no,msg->info.name);
 	
 	sprintf(sql,"delete from usrinfo where staffno=%d and name='%s';",msg->info.no,msg->info.name);	
-	if(sqlite3_exec(db,sql,NULL,NULL,&errmsg)!= SQLITE_OK){
+	if(sqlite3_exec(db,sql,NULL,NULL,&errmsg)!= SQLITE_OK)
+	{
 		printf("----------%s.\n",errmsg);
 		strcpy(msg->recvmsg,"failed");
 		send(acceptfd,msg,sizeof(MSG),0);
 		return -1;
-	}else{
+	}else
+	{
 		strcpy(msg->recvmsg,"OK");
 		send(acceptfd,msg,sizeof(msg),0);
 		printf("%s deluser %s success.\n",msg->info.name,msg->info.name);
 	}
-
 	sprintf(buf,"管理员%s删除了%s用户",msg->username,msg->info.name);
 	history_init(msg,buf);
-
 	return 0;
 }
-
 //管理员查询请求
 int process_admin_query_request(int acceptfd,MSG *msg)
 {
@@ -329,32 +310,38 @@ int process_admin_query_request(int acceptfd,MSG *msg)
 	int nrow,ncolumn;
 	char *errmsg;
 
-	if(msg->flags == 1){
-		sprintf(sql,"select * from usrinfo where name='%s';",msg->info.name);
-	}else{
-		sprintf(sql,"select * from usrinfo;");
+	if(msg->flags == 1)
+	{
+	    sprintf(sql,"select * from usrinfo where name='%s';",msg->info.name);
+	}else
+	{
+	     sprintf(sql,"select * from usrinfo;");
 	}
 	
-	if(sqlite3_get_table(db, sql, &resultp,&nrow,&ncolumn,&errmsg) != SQLITE_OK){
+	if(sqlite3_get_table(db, sql, &resultp,&nrow,&ncolumn,&errmsg) != SQLITE_OK)
+	{
 		printf("%s.\n",errmsg);
-	}else{
+	}else
+	{
 		printf("searching.....\n");
 		printf("ncolumn :%d\tnrow :%d.\n",ncolumn,nrow);
 		
-		for(i = 0; i < ncolumn; i ++){
+		for(i = 0; i < ncolumn; i ++)
+		{
 			printf("%-8s ",resultp[i]);
 		}
 		puts("");
 		puts("=============================================================");
 		
 		int index = ncolumn;
-		for(i = 0; i < nrow; i ++){
-			printf("%s  %s  %s  %s  %s     %s     %s     %s     %s     %s     %s.\n",\
-					resultp[index+ncolumn-11],resultp[index+ncolumn-10],\
+		for(i = 0; i < nrow; i ++)
+		{
+			/*printf("%s  %s  %s  %s  %s     %s     %s     %s     %s     %s     %s.\n",\
+			resultp[index+ncolumn-11],resultp[index+ncolumn-10],\
 				resultp[index+ncolumn-9],resultp[index+ncolumn-8],resultp[index+ncolumn-7],\
 				resultp[index+ncolumn-6],resultp[index+ncolumn-5],\
 				resultp[index+ncolumn-4],resultp[index+ncolumn-3],resultp[index+ncolumn-2],\
-				resultp[index+ncolumn-1]);
+				resultp[index+ncolumn-1]);*/
 				
 			sprintf(msg->recvmsg,"%s,  %s,  %s,  %s,  %s,    %s,    %s,    %s,    %s,    %s,    %s;",\
 				    resultp[index+ncolumn-11],resultp[index+ncolumn-10],\
@@ -363,7 +350,6 @@ int process_admin_query_request(int acceptfd,MSG *msg)
 				resultp[index+ncolumn-4],resultp[index+ncolumn-3],resultp[index+ncolumn-2],\
 				resultp[index+ncolumn-1]);
 			send(acceptfd,msg,sizeof(MSG),0);
-			//}
 			usleep(1000);
 			puts("=============================================================");
 			index += ncolumn;
@@ -373,24 +359,17 @@ int process_admin_query_request(int acceptfd,MSG *msg)
 			//通知对方查询结束了
 			strcpy(msg->recvmsg,"over*");
 			send(acceptfd,msg,sizeof(MSG),0);
-		}
-		
+		}		
 		sqlite3_free_table(resultp);
 		printf("sqlite3_get_table successfully.\n");
 	}
-
-
-
 }
-
-
 //回调函数
 int history_callback(void *arg, int ncolumn, char **f_value, char **f_name)
 {
 	int i = 0;
 	MSG *msg= (MSG *)arg;
 	int acceptfd = msg->flags;
-
 	if(flags == 0){
 		for(i = 0; i < ncolumn; i++){
 			printf("%-11s", f_name[i]);
@@ -398,7 +377,6 @@ int history_callback(void *arg, int ncolumn, char **f_value, char **f_name)
 		putchar(10);
 		flags = 1;
 	}
-
 	for(i = 0; i < ncolumn; i+=3)
 	{
 		printf("%s-%s-%s",f_value[i],f_value[i+1],f_value[i+2]);
@@ -407,10 +385,8 @@ int history_callback(void *arg, int ncolumn, char **f_value, char **f_name)
 		usleep(1000);
 	}
 	puts("");
-
 	return 0;
 }
-
 //历史记录
 int process_admin_history_request(int acceptfd,MSG *msg)
 {
@@ -418,30 +394,25 @@ int process_admin_history_request(int acceptfd,MSG *msg)
 	//封装sql命令－查找历史记录表－回调函数－发送查询结果－发送结束标志
 	char sql[DATALEN] = {0};
 	char *errmsg;
-	msg->flags = acceptfd; //临时保存通信的文件描述符
-	
+	msg->flags = acceptfd; //临时保存通信的文件描述符	
 	sprintf(sql,"select * from historyinfo;");
 	if(sqlite3_exec(db,sql,history_callback,(void *)msg,&errmsg) != SQLITE_OK){
 		printf("%s.\n",errmsg); 	
 	}else{
 		printf("query history record done.\n");
 	}
-
-	//通知对方查询结束了
+	//通知对方查询结束
 	strcpy(msg->recvmsg,"over*");
 	send(acceptfd,msg,sizeof(MSG),0);
-
-	 flags = 0; //记得将全局变量修改为原来的状态
+	 flags = 0; //将全局变量修改为原来的状态
 }
-
 //客户端退出
 int process_client_quit_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
-
 }
 
-
+//客户端请求
 int process_client_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
@@ -478,10 +449,7 @@ int process_client_request(int acceptfd,MSG *msg)
 		default:
 			break;
 	}
-
 }
-
-
 int main(int argc, const char *argv[])
 {
 	//socket->填充->绑定->监听->等待连接->数据交互->关闭 
@@ -510,10 +478,9 @@ int main(int argc, const char *argv[])
 
 	if(sqlite3_exec(db,"create table historyinfo(time text,name text,words text);",NULL,NULL,&errmsg)!= SQLITE_OK){
 		printf("%s.\n",errmsg);
-	}else{ //华清远见创客学院         嵌入式物联网方向讲师
+	}else{ 
 		printf("create historyinfo table success.\n");
 	}
-
 	//创建网络通信的套接字
 	sockfd = socket(AF_INET,SOCK_STREAM, 0);
 	if(sockfd == -1){
@@ -521,27 +488,22 @@ int main(int argc, const char *argv[])
 		exit(-1);
 	}
 	printf("sockfd :%d.\n",sockfd); 
-
 	//填充网络结构体
 	memset(&serveraddr,0,sizeof(serveraddr));
 	memset(&clientaddr,0,sizeof(clientaddr));
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_port   = htons(6666);
 	serveraddr.sin_addr.s_addr = inet_addr("192.168.32.134");
-
-
 	//绑定网络套接字和网络结构体
 	if(bind(sockfd, (const struct sockaddr *)&serveraddr,addrlen) == -1){
 		printf("bind failed.\n");
 		exit(-1);
 	}
-
 	//监听套接字，将主动套接字转化为被动套接字
 	if(listen(sockfd,10) == -1){
 		printf("listen failed.\n");
 		exit(-1);
 	}
-
 	//定义一张表
 	fd_set readfds,tempfds;
 	//清空表
@@ -552,12 +514,10 @@ int main(int argc, const char *argv[])
 	int nfds = sockfd;
 	int retval;
 	int i = 0;
-
 #if 0 //添加线程控制部分
 	pthread_t thread[N];
 	int tid = 0;
 #endif
-
 	while(1){
 		tempfds = readfds;
 		//记得重新添加
@@ -593,56 +553,8 @@ int main(int argc, const char *argv[])
 		}
 	}
 	close(sockfd);
-
 	return 0;
 }
-
-
-
-
-
-
-
-#if 0
-					//tid_data.acceptfd = acceptfd;   //暂时不使用这种方式
-					//tid_data.state	  = 1;
-					//tid_data.thread   = thread[tid++];	
-					//pthread_create(&tid_data.thread, NULL,client_request_handler,(void *)&tid_data);
-#endif 
-
-#if 0
-void *client_request_handler(void * args)
-{
-	thread_data_t *tiddata= (thread_data_t *)args;
-
-	MSG msg;
-	int recvbytes;
-	printf("tiddata->acceptfd :%d.\n",tiddata->acceptfd);
-
-	while(1){  //可以写到线程里--晚上的作业---- UDP聊天室
-		//recv 
-		memset(msg,sizeof(msg),0);
-		recvbytes = recv(tiddata->acceptfd,&msg,sizeof(msg),0);
-		if(recvbytes == -1){
-			printf("recv failed.\n");
-			close(tiddata->acceptfd);
-			pthread_exit(0);
-		}else if(recvbytes == 0){
-			printf("peer shutdown.\n");
-			pthread_exit(0);
-		}else{
-			printf("msg.recvmsg :%s.\n",msg.recvmsg);
-			strcat(buf,"*-*");
-			send(tiddata->acceptfd,&msg,sizeof(msg),0);
-		}
-	}
-
-}
-
-#endif 
-
-
-
 
 
 
