@@ -14,13 +14,9 @@
 #include <unistd.h>
 #include <sys/select.h>
 #include <pthread.h>
-
 #include "common.h"
-
 sqlite3 *db;  //仅服务器使用
 int flags = 0;
-
-
 void get_system_time(char* timedata)
 {
 	time_t t;
@@ -32,7 +28,6 @@ void get_system_time(char* timedata)
 			tp->tm_mday,tp->tm_hour,tp->tm_min,tp->tm_sec);
 	return ;
 }
-
 void history_init(MSG *msg,char *buf)
 {
 	printf("--------%s---------%d-------",__func__,__LINE__);
@@ -52,6 +47,7 @@ void history_init(MSG *msg,char *buf)
 		printf("insert historyinfo success.\n");
 	}
 }
+//管理员或员工登录
 int process_user_or_admin_login_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
@@ -85,7 +81,7 @@ int process_user_or_admin_login_request(int acceptfd,MSG *msg)
 	}
 	return 0;	
 }
-//用户修改请求函数
+//员工修改请求函数
 int process_user_modify_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
@@ -129,22 +125,17 @@ int process_user_modify_request(int acceptfd,MSG *msg)
 
 	printf("------%s.\n",historybuf);
 	return 0;
-
 }
-
-
-//用户查询请求函数
+//员工查询请求函数
 int process_user_query_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
 	//检查msg->flags--->封装sql命令－查找历史记录表－回调函数－发送查询结果－发送结束标志
-
 	int i = 0,j = 0;
 	char sql[DATALEN] = {0};
 	char **resultp;
 	int nrow,ncolumn;
 	char *errmsg;
-
 	sprintf(sql,"select * from usrinfo where name='%s';",msg->username);
 	if(sqlite3_get_table(db, sql, &resultp,&nrow,&ncolumn,&errmsg) != SQLITE_OK)
 	{
@@ -157,8 +148,7 @@ int process_user_query_request(int acceptfd,MSG *msg)
 			printf("%-8s ",resultp[i]);
 		}
 		puts("");
-		puts("======================================================================================");
-				
+		puts("======================================================================================");				
 		int index = ncolumn;
 		for(i = 0; i < nrow; i ++)
 		{
@@ -185,9 +175,7 @@ int process_user_query_request(int acceptfd,MSG *msg)
 		sqlite3_free_table(resultp);
 		printf("sqlite3_get_table successfully.\n");
 	}
-
 }
-
 //管理员修改请求函数
 int process_admin_modify_request(int acceptfd,MSG *msg)
 {
@@ -233,7 +221,6 @@ int process_admin_modify_request(int acceptfd,MSG *msg)
 	printf("------%s.\n",historybuf);
 	return 0;
 }
-
 //管理员添加用户请求函数
 int process_admin_adduser_request(int acceptfd,MSG *msg)
 {
@@ -268,7 +255,6 @@ int process_admin_adduser_request(int acceptfd,MSG *msg)
 
 	sprintf(buf,"管理员%s添加了%s用户",msg->username,msg->info.name);
 	history_init(msg,buf);
-
 	return 0;
 }
 //管理员删除用户请求函数
@@ -309,15 +295,13 @@ int process_admin_query_request(int acceptfd,MSG *msg)
 	char **resultp;
 	int nrow,ncolumn;
 	char *errmsg;
-
 	if(msg->flags == 1)
 	{
 	    sprintf(sql,"select * from usrinfo where name='%s';",msg->info.name);
 	}else
 	{
 	     sprintf(sql,"select * from usrinfo;");
-	}
-	
+	}	
 	if(sqlite3_get_table(db, sql, &resultp,&nrow,&ncolumn,&errmsg) != SQLITE_OK)
 	{
 		printf("%s.\n",errmsg);
@@ -331,8 +315,7 @@ int process_admin_query_request(int acceptfd,MSG *msg)
 			printf("%-8s ",resultp[i]);
 		}
 		puts("");
-		puts("=============================================================");
-		
+		puts("=============================================================");		
 		int index = ncolumn;
 		for(i = 0; i < nrow; i ++)
 		{
@@ -353,8 +336,7 @@ int process_admin_query_request(int acceptfd,MSG *msg)
 			usleep(1000);
 			puts("=============================================================");
 			index += ncolumn;
-		}
-		
+		}		
 		if(msg->flags != 1){  //全部查询的时候不知道何时结束，需要手动发送结束标志位，但是按人名查找不需要
 			//通知对方查询结束了
 			strcpy(msg->recvmsg,"over*");
@@ -411,7 +393,6 @@ int process_client_quit_request(int acceptfd,MSG *msg)
 {
 	printf("------------%s-----------%d.\n",__func__,__LINE__);
 }
-
 //客户端请求
 int process_client_request(int acceptfd,MSG *msg)
 {
