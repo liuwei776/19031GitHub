@@ -35,6 +35,7 @@ void history_init(MSG *msg,char *buf)
 	int nrow,ncolumn;
 	char *errmsg, **resultp;
 	char sqlhistory[DATALEN] = {0};
+	
 	char timedata[DATALEN] = {0};
 	get_system_time(timedata);
 //	sprintf(sqlhistory,"insert into historyinfo values ('%s','%s','%s');",timedata,msg->username,buf);
